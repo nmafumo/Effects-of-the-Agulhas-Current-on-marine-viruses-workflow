@@ -1,1 +1,1 @@
-# naxtflow_tutorial
+# nextflow_tutorial
