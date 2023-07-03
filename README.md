@@ -1,1 +1,1 @@
-# nextflow_tutorial
+#nextflow_script
