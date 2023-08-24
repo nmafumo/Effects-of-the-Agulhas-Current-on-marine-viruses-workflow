@@ -1,0 +1,55 @@
+#FastQC
+
+for files in *_001.fastq.gz;do fastqc $files;done
+
+#Trimmomatic
+
+for f in $(ls *fastq.gz | sed -e 's/_R1_001.fastq.gz//' -e 's/_R2_001.fastq.gz//' | sort -u)
+do
+java -jar $TRIMMOMATIC PE -phred33 -threads 8 ${f}_R1_001.fastq.gz ${f}_R2_001.fastq.gz ${f}_R1_001_paired.fastq.gz ${f}_R1_001_unpaired.fastq.gz ${f}_R2_001_paired.fastq.gz ${f}_R2_001_unpaired.fastq.gz$
+done
+
+#Megahit
+
+for f in $(ls *paired*.gz | sed -e 's/_R1_001_paired.fastq.gz//' -e 's/_R1_001_unpaired.fastq.gz//' -e 's/_R2_001_paired.fastq.gz//' -e 's/_R2_001_unpaired.fastq.gz//' | sort -u)
+do
+megahit -1 $f\_R1_001_paired.fastq.gz -2 $f\_R2_001_paired.fastq.gz -t 24 -o $f\_megahit_output 
+done
+
+#Virsorter2 
+
+for f in input; do
+virsorter run --keep-original-seq -i $f -w $f\.virsorter.vs1.out --include-groups dsDNAphage --min-length 5000 --min-score 0.5 -j 24 all;done
+
+#CheckV
+
+for f in input; do checkv end_to_end $f $f\.checkvout -t 24 -d path_to_database; done
+
+
+#Virsorter2 again to prepare for DRAMv 
+
+virsorter run --seqname-suffix-off --viral-gene-enrich-off --provirus-off --prep-for-dramv -i input.fna -w vs2-pass2 --include-groups dsDNAphage --min-length 5000 --min-score 0.5 -j 24 all
+
+#Prodigal
+
+prodigal -i input.fna -o coords.gbk -a output.faa -p meta
+
+#vContact2 
+
+vcontact2 --raw-proteins proteins.faa --rel-mode 'Diamond' --proteins-fp proteins.faa_g2g.csv --db path_to_database --pcs-mode MCL --vcs-mode ClusterONE --c1-bin /apps/vContact2/bin/cluster_one-1.0.jar --output-dir vContact_out
+
+#Vibrant
+
+VIBRANT_run.py -i input.fna -t 24 -virome
+
+#Cd-hit
+
+cd-hit-est -i input.fna -o cdhit_out.fna -c 0.95 -n 10 -aS 0.8 -d 0 -M 200000 -T 24
+
+#MAFFT 
+mafft --auto --thread -10 input.faa > aprB_mafft_out
+
+
+#IQ-TREE
+iqtree -s input -bb 1000 -T 10
+
