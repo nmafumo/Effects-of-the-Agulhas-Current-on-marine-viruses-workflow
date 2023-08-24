@@ -1,0 +1,5 @@
+Netflow script
+
+conda activate nextflow
+nextflow run main_final.nf  
+
